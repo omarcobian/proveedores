@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <title>JSON data table</title>
+</head>
+<body>
+<header>
+    <div class="caja">
+        <nav>
+            <ul>
+                <li class="opciones"><a href="/index.html">Registrer</a></li>
+                <li class="opciones"><a href="#">Table</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<h2 style="text-align: center">All Supplier</h2>
+    <!-- Agrega campos de entrada para filtrar -->
+    <div style="width: 400px; margin: auto; margin-top: 20px;">
+        <label for="inputID" class="form-label">ID:</label>
+        <input type="text" class="form-control" id="inputID">
+    </div>
+    <div style="width: 400px; margin: auto; margin-top: 20px;">
+        <label for="inputName" class="form-label">Name:</label>
+        <input type="text" class="form-control" id="inputName">
+    </div>
+    <div style="width: 400px; margin: auto; margin-top: 20px;">
+        <label for="inputSpecialty" class="form-label">Specialty:</label>
+        <input type="text" class="form-control" id="inputSpecialty">
+    </div>
+
+    <button style="width: 400px; margin: auto; margin-top: 20px;" type="button" id="btnFiltrar" class="btn btn-primary" onclick="findSupplier()">Search</button>
+    <button style="width: 400px; margin: auto; margin-top: 20px;" class="btn" onclick="fetchDataAndPopulateTable(url);">clear filter</button>
+
+<table id="dataTable" class="table table-striped">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Address</th>
+        <th>Contact Number</th>
+        <th>Email</th>
+        <th>Region</th>
+        <th>Specialty</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+</table>
+
+<script>
+    function findSupplier(){
+        const searchId = document.getElementById('inputID').value;
+        const searchName = document.getElementById('inputName').value;
+        const searchSpecialty = document.getElementById('inputSpecialty').value;
+
+        let url = '/suppiler'
+
+        if (searchId) {
+            url += `/id?id=${searchId}`;
+        }else if (searchName){
+            url += `/name?name=${searchName}`;
+        }else if (searchSpecialty){
+            url += `/specialty?specialty=${searchSpecialty}`;
+        }
+        fetch(url)
+            .then(response => response.json())
+            .then(suppilers => {
+                try {
+                    renderSuppilers(suppilers);
+                } catch (error){
+                    renderSuppilers(suppilers);
+                }
+
+            })
+            .catch(error => console.log('Error', error));
+    }
+
+    async function fetchDataAndPopulateTable(url) {
+        fetch('/suppiler')
+            .then(response => response.json())
+            .then(suppliers => {
+                renderSuppilers(suppliers);
+            })
+            .catch(error => console.error('Error: ', error));
+    }
+    function renderSuppilers(suppilers){
+        const tableBody = document.getElementById("tableBody");
+        tableBody.innerHTML = '';
+
+        if (Array.isArray(suppilers) && suppilers.length > 0){
+            suppilers.forEach(suppiler => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${suppiler.id}</td>
+                    <td>${suppiler.name}</td>
+                    <td>${suppiler.address}</td>
+                    <td>${suppiler.contactNumber}</td>
+                    <td>${suppiler.email}</td>
+                    <td>${suppiler.region}</td>
+                    <td>${suppiler.specialty}</td>
+                    <td>
+                        <button type="button" id="${suppiler.id}" onclick="deleteSupplierButton(${suppiler.id})" class="btn btn-danger">Delete</button>
+                        <button type="button" id="${suppiler.id}" onclick="editSupplier(${suppiler.id})" class="btn btn-warning">Edit</button>
+                    </td>
+                `;
+                row.setAttribute("id",suppiler.id);
+                tableBody.appendChild(row);
+            });
+        }else{
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>${suppilers.id}</td>
+                    <td>${suppilers.name}</td>
+                    <td>${suppilers.address}</td>
+                    <td>${suppilers.contactNumber}</td>
+                    <td>${suppilers.email}</td>
+                    <td>${suppilers.region}</td>
+                    <td>${suppilers.specialty}</td>
+                    <td>
+                        <button type="button" id="${suppilers.id}" onclick="deleteSupplierButton(${suppilers.id})" class="btn btn-danger">Delete</button>
+                        <button type="button" id="${suppilers.id}" onclick="editSupplier(${suppilers.id})" class="btn btn-warning">Edit</button>
+                    </td>
+                `;
+            row.setAttribute("id",suppilers.id);
+            tableBody.appendChild(row);
+        }
+    }
+
+    const url = "/suppiler";
+    fetchDataAndPopulateTable(url);
+
+    function deleteSupplier(id){
+        const deleteUrl = "/suppiler/delete?id=" + id;
+        fetch(deleteUrl,{
+            method: 'DELETE',
+            headers: {
+                'content-Type': 'application/json'
+            },
+        })
+            .then(response =>{
+                if(!response.ok){
+                    throw new Error("Network response is not ok");
+                }
+                return response;
+            })
+            .then(data=>{
+                console.log("item deleted succesfully: " + data);
+                fetchDataAndPopulateTable(url);
+            })
+            .catch(error=>{
+                console.log("there was a problem with the fetch operation: ", error);
+            });
+    }
+
+    function deleteSupplierButton(id){
+        if(confirm("Are you sure you want to delete the supplier with id = " + id)){
+            deleteSupplier(id);
+        } else {
+            console.log("No changes were made to the supplier.");
+        }
+    }
+
+    function editSupplier(id){
+        let currentRow = document.getElementById(id);
+
+        let nameCell = currentRow.children.item(1);
+        let addressCell = currentRow.children.item(2);
+        let contactNumberCell = currentRow.children.item(3);
+        let emailCell = currentRow.children.item(4);
+        let regionCell = currentRow.children.item(5);
+        let specialtyCell = currentRow.children.item(6);
+
+        nameCell.setAttribute("contenteditable", "true");
+        addressCell.setAttribute("contenteditable", "true");
+        emailCell.setAttribute("contenteditable", "true");
+        contactNumberCell.setAttribute("contenteditable", "true");
+        regionCell.setAttribute("contenteditable", "true");
+        specialtyCell.setAttribute("contenteditable", "true");
+
+        currentRow.children.item(1).focus();
+
+        let editButton = currentRow.children.item(7).children.item(1);
+        editButton.setAttribute("class", "btn btn-success");
+        editButton.innerHTML = "Save";
+
+        editButton.setAttribute("onClick", `saveSupplier(${id})`);
+    }
+
+    function saveSupplier(id) {
+        let currentRow = document.getElementById(id);
+
+        let nameCell = currentRow.children.item(1);
+        let addressCell = currentRow.children.item(2);
+        let emailCell = currentRow.children.item(4);
+        let contactNumberCell = currentRow.children.item(3);
+        let regionCell = currentRow.children.item(5);
+        let specialtyCell = currentRow.children.item(6);
+
+        const editedSupplier = {
+            id: id,
+            name: nameCell.innerHTML,
+            address: addressCell.innerHTML,
+            email: emailCell.innerHTML,
+            contactNumber: contactNumberCell.innerHTML,
+            region: regionCell.innerHTML,
+            specialty: specialtyCell.innerHTML
+        };
+        console.log(JSON.stringify(editedSupplier))
+        console.log(editedSupplier);
+
+        const updateUrl = "/suppiler/update";
+
+        const requestOptions = {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(editedSupplier)
+        };
+
+        fetch(updateUrl, requestOptions)
+            .then(response =>{
+                if(!response.ok){
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data=>{
+                console.log("Success: " + data);
+                fetchDataAndPopulateTable(url);
+            })
+            .catch(error=>{
+                console.log("Error: ", error);
+            });
+    }
+</script>
+
+</body>
+</html>
